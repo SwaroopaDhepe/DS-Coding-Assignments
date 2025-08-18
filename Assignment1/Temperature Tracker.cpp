@@ -1,5 +1,5 @@
-Temperature Tracker:
-Write a program for tracking daily temperatures of 3 cities for a week . The program calculates the average temperature for each day and for the week.
+/*Temperature Tracker:
+Write a program for tracking daily temperatures of 3 cities for a week . The program calculates the average temperature for each day and for the week.*/
 
 #include <iostream>
 #include <iomanip>
