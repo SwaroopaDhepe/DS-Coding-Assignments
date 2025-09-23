@@ -1,1 +1,57 @@
+  Simple Task Scheduler:
+  Write a program that implements a simple task scheduler using a singly linked list. Each
+  node in the linked list represents a task with its priority and execution time. Tasks are 
+  scheduled based on their priority, with higher priority tasks being executed first.*/
+
+#include<iostream>
+#include<string>
+using namespace std;
+class node{
+	public:
+	string name;
+	int priority, time;
+	node* next;
+	node(string n, int p, int t){
+		name=n; priority=p; time=t; next=NULL; }
+};
+void insert(node*& head, string n, int p, int t){
+	node* temp=new node(n, p, t);
+	if(!head || head->priority<p){
+		temp->next = head;
+		head=temp;
+		return;
+	}
+	node* cur=head;
+	while(cur->next && cur->next->priority>=p){
+		cur=cur->next;
+	}
+		temp->next=cur->next;
+		cur->next=temp;
+}
+void display(node* head){
+	cout<<"\n--- Executing Tasks ---\n";
+	for(node* t=head; t; t=t->next){
+		cout<<"Running task "<<t->name
+		<<" (Priority= "<<t->priority<<", Time= "<<t->time<<"s)...\n";
+		cout<<"Task "<<t->name<<" completed!\n";
+	}
+	cout<<"\nAll tasks done!\n"; }
+int main(){
+	int n;
+	cout<<"Enter number of tasks: ";
+	cin>>n;
+	node* head=NULL;
+	for(int i=0; i<n; i++){
+		string name; 
+		int p, t;
+		cout<<"\nTask name: ";
+		cin>>name;
+		cout<<"Priority: ";
+		cin>>p;
+		cout<<"Execution time(s): ";
+		cin>>t;
+		insert(head, name, p, t); }
+	display(head);
+	return 0;
+}
 
