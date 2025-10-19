@@ -1,0 +1,46 @@
+/*Depth First Search (DFS):
+Application: Web crawlers use DFS to explore web pages systematically, following links and indexing content for search engines. Write a simple program to index web pages using Depth First Search (DFS). The program should simulate a web graph where pages are represented as nodes and hyperlinks as edges.*/
+
+#include <iostream>
+using namespace std;
+int web[20][20]; //Adjacency matrix to represent hyperlinks
+bool indexed[20]; //Visited array -> pages that are already indexed
+void dfs(int page, int n){
+    indexed[page]=true;
+    cout<<"Indexed Page "<<page<<endl;
+    for(int i=0; i<n; i++){
+        if(web[page][i]==1 && indexed[i]==false){
+            dfs(i, n);
+        } } }
+int main(){
+    int pages, links;
+    cout<<"Enter number of web pages: ";
+    cin>>pages;
+    cout<<"Enter number of hyperlinks: ";
+    cin>>links;
+    for(int i=0; i<pages; i++){
+        indexed[i]=false;
+        for (int j=0; j<pages;j++){
+            web[i][j]=0;
+        } }
+    cout<<"Enter hyperlinks (fromPage toPage):"<<endl;
+    for (int i=0; i<links; i++){
+        int u,v;
+        cin>>u>>v;
+        web[u][v]=1;   
+    }
+    cout<<"\nAdjacency Matrix (Web Graph):\n";
+    for(int i=0; i<pages; i++) {
+        for (int j=0; j<pages; j++) {
+            cout<<web[i][j]<<" ";
+        } cout<<endl;  }
+    cout<<"\nDFS Web Page Indexing Steps:\n";
+    dfs(0, pages);   
+    cout<<"\nFinal Indexed Pages Order: ";
+    for(int i=0; i<pages; i++){
+        if(indexed[i]==true){
+            cout<<i<<" ";
+        } }
+    cout<<endl;
+    return 0;
+}
