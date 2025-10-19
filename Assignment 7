@@ -1,4 +1,60 @@
-/*Depth First Search (DFS):
+/*A]BreadthFirst Search (BFS):
+Application:Indexing web pages for search engines.
+Example: A web crawler uses BFS to visit web pages systematically, starting from a seed URL and exploring links level by level. Nodes represent web pages. Edges represent hyperlinks. BFS ensures that pages at the same "depth" (distance from the starting page) are visited before moving to deeper levels. Write a program to simulate the indexing of web pages for a search engine using a Breadth-First Search (BFS) algorithm.*/
+
+#include <iostream>
+#include <queue>     //for BFS queue
+using namespace std;
+int web[20][20];     // adjacency matrix to represent hyperlinks
+bool indexed[20];    // visited array -> pages that are already indexed
+void bfs(int start, int n){
+    queue<int>q;          // FIFO queue
+    indexed[start]=true; 
+    q.push(start);
+    while(!q.empty()){
+        int page=q.front();
+        q.pop();
+        cout<<"Indexed Page "<<page<<endl;
+        for(int i=0; i<n; i++){
+            if(web[page][i]==1 && indexed[i]==false){
+                indexed[i]=true;
+                q.push(i);
+            } } } }
+int main(){
+    int pages, links;
+    cout<<"Enter number of web pages: ";
+    cin>>pages;
+    cout<<"Enter number of hyperlinks: ";
+    cin>>links;
+    for(int i=0; i<pages; i++){
+        indexed[i]=false;
+        for(int j=0; j<pages; j++) {
+            web[i][j]=0;
+        } }
+    cout<<"Enter hyperlinks (fromPage toPage):"<<endl;
+    for(int i=0; i<links; i++){
+        int u,v;
+        cin>>u>>v;
+        web[u][v]=1;  
+    }
+    cout<<"\nAdjacency Matrix (Web Graph):\n";
+    for(int i=0; i<pages; i++){
+        for (int j=0; j<pages; j++){
+            cout<<web[i][j]<<" ";
+        } cout<<endl; }
+    cout<<"\nBFS Web Page Indexing Steps:\n";
+    bfs(0, pages);   
+    cout<<"\nFinal Indexed Pages Order: ";
+    for(int i=0; i<pages; i++){
+        if(indexed[i]==true){
+            cout<<i<<" ";
+        } }
+    cout<<endl;
+    return 0;
+}
+
+
+/*B]Depth First Search (DFS):
 Application: Web crawlers use DFS to explore web pages systematically, following links and indexing content for search engines. Write a simple program to index web pages using Depth First Search (DFS). The program should simulate a web graph where pages are represented as nodes and hyperlinks as edges.*/
 
 #include <iostream>
