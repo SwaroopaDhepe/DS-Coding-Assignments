@@ -1,0 +1,321 @@
+/*Mini-Project Idea: This project simulates a Movie Ticket Booking System using key data structure concepts in C++. Users can book seats, cancel bookings, undo recent actions, and view statistics such as total revenue and seat availability.*/
+
+#include<iostream>
+#include<stack>
+#include<queue>
+#include<string>
+#include<fstream>
+#include<iomanip>
+using namespace std;
+
+struct Ticket{
+    string name;
+    int seatNo;
+    string category;
+    double price;
+    Ticket* next;
+    Ticket(string n, int s, string c, double p){
+        name = n;
+        seatNo = s;
+        category = c;
+        price = p;
+        next = NULL;
+    }
+};
+class TicketBooking{
+    Ticket* head;
+    stack<int> undoStack;
+    queue<string> waitQ;
+    int seats[2][5]; //2 rows x 5 seats
+    int totalSeats;
+    double totalRevenue;
+    
+public:
+    TicketBooking(){
+        head = NULL;
+        totalSeats = 10;
+        totalRevenue = 0;
+        for(int i=0; i<2; i++)
+            for(int j=0; j<5; j++)
+                seats[i][j] = 0;
+    }
+    void welcomeScreen(){
+        cout<<"\n============================================================\n";
+        cout<<" CINEBOOK MOVIE TICKET SYSTEN\n";
+        cout<<"============================================================\n";
+        cout<<"Now Showing: Interstellar (English | 2D | Screen 1)\n";
+        cout<<"------------------------------------------------------------\n";
+        cout<<"Concepts Used:\n";
+        cout<<" > Linked List - Store current bookings\n";
+        cout<<" > Stack - Undo last bookings\n";
+        cout<<" > Queue - Waiting list management\n";
+        cout<<" > 2D Array - Seat layout\n";
+        cout<<"------------------------------------------------------------\n";
+        cout<<"Note: Seats 1-5 = Silver 150₹ | Seats 6-10 = Gold 250 Rs\n";
+        cout<<"============================================================\n";
+    }
+    pair<string, double> seatCategory(int seatNo){
+        if(seatNo <= 5) return {"Silver", 150};
+        else return {"Gold", 250};
+    }
+    void bookSeat(string name,int seatNo){
+        if(seatNo <1 || seatNo >totalSeats){
+            cout<<"[Error] Invalid seat number!\n";
+            return;
+        }
+        int row = (seatNo -1) / 5;
+        int col = (seatNo -1) %5;
+        if(seats[row][col] == 0){
+            seats[row][col] =1;
+            auto[category, price] = seatCategory(seatNo);
+            totalRevenue += price;
+            
+            Ticket* newTicket= new Ticket(name, seatNo, category, price);
+            if(!head)head = newTicket;
+            else{
+                Ticket* temp = head;
+                while(temp->next)
+                    temp = temp->next;
+                temp->next = newTicket;
+            }
+            
+            undoStack.push(seatNo);
+            cout<<"[Booked] "<<name<<" reserved Seat "<<seatNo<<" ("<<category<<", ₹"<<price<<")\n";
+            saveReceipt(name, seatNo, category, price);
+        }else{
+            cout<<"[Full] Seat "<<seatNo<<" is booked. Added to waiting list.\n";
+            waitQ.push(name);
+        }
+    }
+    void autoAssign(string name){
+        for(int i=1; i<=totalSeats; i++){
+            int row = (i-1)/5;
+            int col = (i-1)%5;
+            if(seats[row][col] == 0){
+                bookSeat(name, i);
+                return;
+            }
+        }
+        cout<<"[Notice] All seats full. "<<name<<" added to waiting list.\n";
+        waitQ.push(name);
+    }
+    void undoLastBooking(){
+        if(undoStack.empty()){
+            cout<<"[Warning] No booking available to undo.\n";
+            return;
+        }
+        int lastSeat = undoStack.top();
+        undoStack.pop();
+        int row=(lastSeat-1)/5;
+        int col=(lastSeat-1)%5;
+        seats[row][col]=0;
+        Ticket*curr = head;
+        Ticket* prev = NULL;
+        while(curr && curr->seatNo != lastSeat){
+            prev=curr;
+            curr=curr->next;
+        }
+        if(curr){
+            totalRevenue -= curr->price;
+            if(!prev) head = head->next;
+            else prev->next = curr->next;
+            delete curr;
+        }
+        cout<<"[Undo] Booking for sear "<<lastSeat<<" undone.\n";
+        if(!waitQ.empty()){
+            string next = waitQ.front();
+            waitQ.pop();
+            bookSeat(next, lastSeat);
+            cout<<"[Auto-Assigned] Seat "<<lastSeat<<" given to "<<next<<".\n";
+        }
+    }
+    void cancelBooking(int seatNo){
+        Ticket* curr=head;
+        Ticket* prev=NULL;
+        while(curr && curr->seatNo != seatNo){
+            prev=curr;
+            curr=curr->next;
+        }
+        if(!curr){
+            cout<<"[Info] Seat "<<seatNo<<" not found,\n";
+            return;
+        }
+        if(!prev) head=head->next;
+        else prev->next=curr->next;
+        int row=(seatNo-1)/5;
+        int col=(seatNo-1)%5;
+        seats[row][col]=0;
+        totalRevenue -=curr->price;
+        delete curr;
+        cout<<"[Cancel] Booking for seat "<<seatNo<<" canceled.\n";
+        if(!waitQ.empty()){
+            string next=waitQ.front();
+            waitQ.pop();
+            bookSeat(next, seatNo);
+            cout<<"[Auto-Assign] Seat "<<seatNo<<" reassignmed to "<<next<<".\n";
+        }
+    }
+    void searchBooking(string name){
+        Ticket* temp=head;
+        bool found=false;
+        while(temp){
+            if(temp->name==name){
+                cout<<"[Found] "<<name<<" booked seat "<<temp->seatNo<<" ("<<temp->category<<", ₹"<<temp->price<<")\n";
+                found=true;
+                break;
+            }
+            temp=temp->next;
+        }
+        if(!found)
+            cout<<"[Info] No booking found under "<<name<<".\n";
+    }
+    void showBooking(){
+        if(!head){
+            cout<<"No bookings available.\n";
+            return;
+        }
+        cout<<"\n---------------- CURRENT BOOKINGS ----------------\n";
+        cout<<left<<setw(8)<<"Seat"<<setw(15)<<"Name"<<setw(12)<<"Category"<<setw(8)<<"Price\n";
+        cout<<"---------------------------------------------------\n";
+        Ticket* temp=head;
+        while(temp){
+            cout<<left<<setw(8)<<temp->seatNo<<setw(15)<<temp->name<<setw(12)<<temp->category<<"₹"<<temp->price<<endl;
+            temp=temp->next;
+        }
+        cout<<"---------------------------------------------------\n";
+    }
+    void showWaitingQueue(){
+        if(waitQ.empty()){
+            cout<<"[Info] Waiting queue empty.\n";
+            return;
+        }
+        cout<<"\n---------------- WAITING QUEUE ----------------\n";
+        queue<string> temp=waitQ;
+        int pos=1;
+        while(!temp.empty()){
+            cout<<pos++<<". "<<temp.front()<<endl;
+            temp.pop();
+        }
+        cout<<"-----------------------------------------------\n";
+    }
+    void showSeatLayout(){
+        cout<<"\n================ CINEMA SEAT MAP ================\n";
+        cout<<"Screen This Way\n\n";
+        int seatNo=1;
+        for(int i=0; i<2; i++){
+            cout<<"Row "<<(i+1)<<": ";
+            for(int j=0; j<5; j++){
+                cout<<"["<<setw(2)<<seatNo<<": "<<(seats[i][j] ? "X" : "O")<<"]";
+                seatNo++;
+            }
+            cout<<endl;
+        }
+        cout<<"Legend: [O]=Available [X]:Booked\n";
+    }
+    void showStatistics(){
+        int booked=0;
+        for(int i=0; i<2; i++)
+            for(int j=0; j<5; j++)
+                if(seats[i][j]==1)
+                    booked++;
+        cout<<"\n================= STATISTICS =================\n";
+        cout<<"Total Seats: "<<totalSeats<<endl;
+        cout<<"Seats Booked: "<<booked<<endl;
+        cout<<"Available: "<<totalSeats-booked<<endl;
+        cout<<"Waiting: "<<waitQ.size()<<endl;
+        cout<<fixed<<setprecision(2);
+        cout<<"Total Revenue: ₹"<<totalRevenue<<endl;
+        cout<<"==============================================\n";
+    }
+    void saveReceipt(string name, int seatNo, string cat, double price){
+        ofstream fout("receipts.txt", ios::app);
+        fout<<"Receipt for "<<name<<" - Seat "<<seatNo<<" ("<<cat<<") : ₹"<<price<<"\n";
+        fout.close();
+    }
+    void saveBookingsToFile(){
+        ofstream fout("bookings.txt");
+        Ticket* temp=head;
+        while(temp){
+            fout<<temp->seatNo<<" "<<temp->name<<"\n";
+            temp=temp->next;
+        }
+        fout.close();
+    }
+    void showSummary(){
+        cout<<"\n============================================================\n";
+        cout<<"Thankyou for booking with CineBook!\n";
+        cout<<"Data Structures Used: Linked List, Stack, Queue, Array\n";
+        cout<<"------------------------------------------------------------\n";
+        cout<<"Total Revenue Collected: ₹"<<totalRevenue<<endl;
+        cout<<"============================================================\n";
+    }
+};
+int main(){
+    TicketBooking tb;
+    tb.welcomeScreen();
+    int choice, seatNo;
+    string name;
+    char autoChoice;
+    do{
+        cout<<"\n==================== MAIN MENU ====================\n";
+        cout<<"1. Book Seat\n";
+        cout<<"2. Save Bookings\n";
+        cout<<"3. Undo Last Booking\n";
+        cout<<"4. Cancle Booking\n";
+        cout<<"5. Search Booking\n";
+        cout<<"6. Show Waiting Queue\n";
+        cout<<"7. Show Seat Layout\n";
+        cout<<"8. View Statistics\n";
+        cout<<"9. Exit\n";
+        cout<<"--------------------------------------------------\n";
+        cout<<"Enter your choice: ";
+        cin>>choice;
+        switch(choice){
+            case 1:
+            cout<<"Enter Name: ";
+            cin>>name;
+            cout<<"Auto assign seat? (y/n): ";
+            cin>>autoChoice;
+            if(autoChoice=='y' || autoChoice=='Y'){
+                tb.autoAssign(name);
+            }else{
+                cout<<"Enter Seat No (1-10): ";
+                cin>>seatNo;
+                tb.bookSeat(name, seatNo);
+            }
+            break;
+            case 2:
+            tb.showBooking();
+            break;
+            case 3:
+            tb.undoLastBooking();
+            break;
+            case 4:
+            cout<<"Ente Seat No to Cance: ";
+            cin>>seatNo;
+            tb.cancelBooking(seatNo);
+            break;
+            case 5:
+            cout<<"Enter Name to Search: ";
+            cin>>name;
+            tb.searchBooking(name);
+            break;
+            case 6:
+            tb.showWaitingQueue();
+            break;
+            case 7:
+            tb.showSeatLayout();
+            break;
+            case 8:
+            tb.showStatistics();
+            break;
+            case 0:
+            tb.saveBookingsToFile();
+            tb.showSummary();
+            break;
+            default:
+            cout<<"[Error] invalid choice! Please try again.\n";
+        }
+    }while(choice!=0);
+    return 0;
+}
